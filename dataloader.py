@@ -31,15 +31,15 @@ transform = transforms.Compose([
 ])
     
 class OCTDataset(Dataset):
-    def __init__(self, args, subset='train', transform=None,):
+    def __init__(self, root, subset='train', transform=None,):
         if subset == 'train':
-            self.annot = pd.read_csv(args.annot_train_prime)
+            self.annot = pd.read_csv(root + '/df_prime_train.csv')
         elif subset == 'test':
-            self.annot = pd.read_csv(args.annot_test_prime)
+            self.annot = pd.read_csv(root + '/df_prime_test.csv')
             
         self.annot['Severity_Label'] = [LABELS_Severity[drss] for drss in copy.deepcopy(self.annot['DRSS'].values)] 
         # print(self.annot)
-        self.root = os.path.expanduser(args.data_root)
+        self.root = os.path.expanduser(root)
         self.transform = transform
         # self.subset = subset
         self.nb_classes=len(np.unique(list(LABELS_Severity.values())))
@@ -59,21 +59,16 @@ class OCTDataset(Dataset):
     def __len__(self):
         return len(self._labels)         
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--annot_train_prime', type = str, default = 'df_prime_train.csv')
-    parser.add_argument('--annot_test_prime', type = str, default = 'df_prime_test.csv')
-    parser.add_argument('--data_root', type = str, default = '')
-    return parser.parse_args()
 
 if __name__ == '__main__':
-    args = parse_args()
-    trainset = OCTDataset(args, 'train', transform=transform)
-    testset = OCTDataset(args, 'test', transform=transform)
+    root =  'C:/Users/jgril/Documents/GitHub/8803_Final_Project'
+    trainset = OCTDataset(root, 'train', transform=transform)
+    testset = OCTDataset(root, 'test', transform=transform)
     print("finished")
-    image = plt.imshow(np.squeeze(trainset.__getitem__(0)[0], axis=0))
-    plt.show()
-    trainset.__getitem__(0)[1]
-    #print(trainset.shape)
-    #print(trainset[1][0].shape)
-    print(len(trainset), len(testset))
+    #image = plt.imshow(np.squeeze(trainset.__getitem__(0)[0], axis=0))
+    #plt.show()
+    print(trainset.__getitem__(0)[0].flatten())
+    #print(trainset[0][0].shape)
+    #print(len(trainset), len(testset))
+    #print(trainset.path_list)
+    #print(trainset._labels)
