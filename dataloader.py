@@ -8,6 +8,7 @@ import argparse
 import os
 import copy
 import matplotlib.pyplot as plt
+import csv
 
 
 LABELS_Severity = {35: 0,
@@ -36,7 +37,7 @@ class OCTDataset(Dataset):
             self.annot = pd.read_csv(root + '/df_prime_train.csv')
         elif subset == 'test':
             self.annot = pd.read_csv(root + '/df_prime_test.csv')
-            
+        self.subset = subset    
         self.annot['Severity_Label'] = [LABELS_Severity[drss] for drss in copy.deepcopy(self.annot['DRSS'].values)] 
         # print(self.annot)
         self.root = os.path.expanduser(root)
@@ -48,13 +49,30 @@ class OCTDataset(Dataset):
         assert len(self.path_list) == len(self._labels)
         # idx_each_class = [[] for i in range(self.nb_classes)]
 
-    def __getitem__(self, index):
-        img, target = Image.open(self.root+self.path_list[index]).convert("L"), self._labels[index]
+    def __getitem__(self, index,meta=False):
+        if self.subset == 'train':
+            csv_file = open(self.root + '/df_prime_train.csv', 'r')
+        if self.subset == 'test':
+            csv_file = open(self.root + '/df_prime_test.csv', 'r')
+        csv_reader = csv.reader(csv_file)
+        if meta == True:    
+            for j, row in enumerate(csv_reader):
+                if self.path_list[index] == row[2]:
+                    metadata = row[8:17]
+                    metadata = [float(x) for x in metadata]
+                    metadata = torch.tensor(metadata)
+                    break
+        csv_file.close()
 
+        img, target = Image.open(self.root + self.path_list[index]).convert("L"), self._labels[index]
+        
         if self.transform is not None:
             img = self.transform(img)
+        
+        #print(self.path_list[index])
+        #print(metadata)
 
-        return img, target
+        return img, target, #metadata
 
     def __len__(self):
         return len(self._labels)         
