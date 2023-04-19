@@ -44,13 +44,32 @@ class OCTDataset(Dataset):
         self.transform = transform
         # self.subset = subset
         self.nb_classes=len(np.unique(list(LABELS_Severity.values())))
-        self.path_list = self.annot['File_Path'].values
-        self._labels = self.annot['Severity_Label'].values
+        #self.path_list = self.annot['File_Path'].values
+        temp_path_list = self.annot['File_Path'].values
+        path_indices = [i for i, _ in enumerate(temp_path_list) if not np.isnan(self.annot["BMI"].values[i])]
+        self.path_list = [self.annot['File_Path'].values[i] for i in path_indices]
+
+        self._labels = [self.annot['Severity_Label'].values[i] for i in path_indices]
         assert len(self.path_list) == len(self._labels)
         # idx_each_class = [[] for i in range(self.nb_classes)]
 
     def __getitem__(self, index,meta=False):
-              
+        if self.subset == 'train':
+            csv_file = open(self.root + '/df_prime_train.csv', 'r')
+        if self.subset == 'test':
+            csv_file = open(self.root + '/df_prime_test.csv', 'r')
+        csv_reader = csv.reader(csv_file)
+         
+        for j, row in enumerate(csv_reader):
+            if self.path_list[index] == row[2]:
+                metadata = row[8:17]
+                if np.isnan(float(metadata[5])):
+                    print(metadata)
+                metadata = [float(x) for x in metadata]
+                metadata = torch.tensor(metadata)
+                break
+        csv_file.close()
+
         img, target = Image.open(self.root + self.path_list[index]).convert("L"), self._labels[index]
         
         if self.transform is not None:
@@ -58,8 +77,8 @@ class OCTDataset(Dataset):
         
         #print(self.path_list[index])
         #print(metadata)
-        
-        return img, target, #metadata
+
+        return img, target, metadata
 
     def __len__(self):
         return len(self._labels)         
